@@ -13,4 +13,10 @@ REST API для управления задачами.
 - логика CRUD для задач
 - ...
 
+## Endpoints
+- Get /task/id
+- Post /task
+- Delete /task/id
+- Put /task/id
+
 ## Запуск
