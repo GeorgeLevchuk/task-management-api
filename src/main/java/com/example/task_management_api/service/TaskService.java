@@ -1,6 +1,7 @@
 package com.example.task_management_api.service;
 
 import com.example.task_management_api.entity.Task;
+import com.example.task_management_api.exception.NotValidAttributeTaskException;
 import com.example.task_management_api.exception.TaskNotFoundException;
 import com.example.task_management_api.repository.TaskRepository;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,11 @@ public class TaskService {
     }
 
     public Task createTask(Task task) {
+        String title = task.getTitle();
+        String description = task.getDescription();
+        if(title == null || title.isBlank() || description == null){
+            throw new NotValidAttributeTaskException();
+        }
         return taskRepository.save(task);
     }
 
@@ -38,17 +44,30 @@ public class TaskService {
         }
         taskRepository.deleteById(id);
     }
+
+    public Task updateTask(Long id, Task task) {
+        Task existing = taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException(id));
+        String title = task.getTitle();
+        String description = task.getDescription();
+        if(title == null || title.isBlank() || description == null){
+            throw new NotValidAttributeTaskException();
+        }
+        existing.setDescription(task.getDescription());
+        existing.setTitle(task.getTitle());
+        return existing;
+    }
     // UPDATE (через Dirty Checking - это механизм Hibernate, который автоматически
     // отслеживает изменения в загруженных из БД объектах и синхронизирует их с базой
     // данных в конце транзакции без явного вызова save())
-    public Task updateTask(Long id, Task updateTask) {
-        Task existing = taskRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException(id));
-        existing.setTitle(updateTask.getTitle());
-        existing.setDescription(updateTask.getDescription());
-        // return taskRepository.save(existing);
-        // ❌ НЕ НУЖЕН save()! JPA сам сохранит
-
-        return existing;
-    }
+//    public Task updateTask(Long id, Task updateTask) {
+//        Task existing = taskRepository.findById(id)
+//                .orElseThrow(() -> new TaskNotFoundException(id));
+//        existing.setTitle(updateTask.getTitle());
+//        existing.setDescription(updateTask.getDescription());
+//        // return taskRepository.save(existing);
+//        // ❌ НЕ НУЖЕН save()! JPA сам сохранит благодаря @Transactional
+//
+//        return existing;
+//    }
 }
