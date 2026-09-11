@@ -5,7 +5,6 @@ import com.example.task_management_api.service.TaskService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
@@ -45,6 +44,6 @@ public class TaskController {
 
     @PutMapping("/{id}")
     public Task updateTask(@PathVariable Long id, @RequestBody Task task){
-        return  taskService.updateTask(id,task);
+        return taskService.updateTask(id,task);
     }
 }
