@@ -15,7 +15,6 @@ import java.util.List;
 @Transactional
 public class TaskService {
     private final TaskRepository taskRepository;
-
     public TaskService(TaskRepository taskRepository){
         this.taskRepository = taskRepository;
     }
@@ -31,7 +30,6 @@ public class TaskService {
             responses.add(response);
         }
         return responses;
-        //позже через Stream
     }
 
     public TaskResponseDto getById(Long id){
@@ -54,7 +52,6 @@ public class TaskService {
         response.setId(savedTask.getId());
         response.setTitle(savedTask.getTitle());
         response.setDescription(savedTask.getDescription());
-
         return response;
     }
 

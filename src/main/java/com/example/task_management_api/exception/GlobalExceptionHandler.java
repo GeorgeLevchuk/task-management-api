@@ -14,7 +14,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-//?
+
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(TaskNotFoundException.class)
@@ -45,33 +45,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
 
-//    @ExceptionHandler(MethodArgumentNotValidException.class)
-//    public ResponseEntity<Map<String, Object>> handleValidationErrors(
-//            MethodArgumentNotValidException ex) {
-//
-//        Map<String, Object> body = new HashMap<>();
-//
-//        body.put("timestamp", LocalDateTime.now());
-//        body.put("status", HttpStatus.BAD_REQUEST.value());
-//        body.put("error", "Validation Error");
-//
-//        Map<String, String> errors = new HashMap<>();
-//
-//        ex.getBindingResult()
-//                .getFieldErrors()
-//                .forEach(error ->
-//                        errors.put(
-//                                error.getField(),
-//                                error.getDefaultMessage()
-//                        )
-//                );
-//
-//        body.put("errors", errors);
-//
-//        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-//    }
-
-    // ✅ Переопределяем метод родителя вместо @ExceptionHandler
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex,
@@ -89,7 +62,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 errors.put(error.getField(), error.getDefaultMessage())
         );
         body.put("errors", errors);
-
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
