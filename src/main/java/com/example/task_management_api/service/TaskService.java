@@ -1,7 +1,9 @@
 package com.example.task_management_api.service;
 
+import com.example.task_management_api.dto.TaskPatchRequestDto;
+import com.example.task_management_api.dto.TaskRequestDto;
+import com.example.task_management_api.dto.TaskResponseDto;
 import com.example.task_management_api.entity.Task;
-import com.example.task_management_api.exception.NotValidAttributeTaskException;
 import com.example.task_management_api.exception.TaskNotFoundException;
 import com.example.task_management_api.repository.TaskRepository;
 import org.springframework.stereotype.Service;
@@ -18,24 +20,42 @@ public class TaskService {
         this.taskRepository = taskRepository;
     }
 
-    public List<Task> getAllTasks(){
-        return taskRepository.findAll();
-    }
-
-    // GET - не нуждается в @Transactional, но можно оставить
-    @Transactional(readOnly = true)  // Оптимизация для чтения
-    public Task getById(Long id){
-        return taskRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException(id));
-    }
-
-    public Task createTask(Task task) {
-        String title = task.getTitle();
-        String description = task.getDescription();
-        if(title == null || title.isBlank() || description == null){
-            throw new NotValidAttributeTaskException();
+    public List<TaskResponseDto> getAllTasks(){
+        List<Task> tasks = taskRepository.findAll();
+        List<TaskResponseDto> responses = new java.util.ArrayList<>();
+        for (Task task : tasks) {
+            TaskResponseDto response = new TaskResponseDto();
+            response.setId(task.getId());
+            response.setTitle(task.getTitle());
+            response.setDescription(task.getDescription());
+            responses.add(response);
         }
-        return taskRepository.save(task);
+        return responses;
+        //позже через Stream
+    }
+
+    public TaskResponseDto getById(Long id){
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException(id));
+        TaskResponseDto response = new TaskResponseDto();
+        response.setId(task.getId());
+        response.setTitle(task.getTitle());
+        response.setDescription(task.getDescription());
+        return response;
+    }
+
+    public TaskResponseDto createTask(TaskRequestDto request) {
+        Task task = new Task();
+        task.setTitle(request.getTitle());
+        task.setDescription(request.getDescription());
+        Task savedTask = taskRepository.save(task);
+
+        TaskResponseDto response = new TaskResponseDto();
+        response.setId(savedTask.getId());
+        response.setTitle(savedTask.getTitle());
+        response.setDescription(savedTask.getDescription());
+
+        return response;
     }
 
     public void deleteTask(Long id) {
@@ -45,29 +65,38 @@ public class TaskService {
         taskRepository.deleteById(id);
     }
 
-    public Task updateTask(Long id, Task task) {
+    public TaskResponseDto updateTask(Long id, TaskRequestDto request) {
         Task existing = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
-        String title = task.getTitle();
-        String description = task.getDescription();
-        if(title == null || title.isBlank() || description == null){
-            throw new NotValidAttributeTaskException();
-        }
-        existing.setDescription(task.getDescription());
-        existing.setTitle(task.getTitle());
-        return existing;
+
+        existing.setTitle(request.getTitle());
+        existing.setDescription(request.getDescription());
+
+        TaskResponseDto response = new TaskResponseDto();
+        response.setId(existing.getId());
+        response.setTitle(existing.getTitle());
+        response.setDescription(existing.getDescription());
+        return response;
     }
-    // UPDATE (через Dirty Checking - это механизм Hibernate, который автоматически
-    // отслеживает изменения в загруженных из БД объектах и синхронизирует их с базой
-    // данных в конце транзакции без явного вызова save())
-//    public Task updateTask(Long id, Task updateTask) {
-//        Task existing = taskRepository.findById(id)
-//                .orElseThrow(() -> new TaskNotFoundException(id));
-//        existing.setTitle(updateTask.getTitle());
-//        existing.setDescription(updateTask.getDescription());
-//        // return taskRepository.save(existing);
-//        // ❌ НЕ НУЖЕН save()! JPA сам сохранит благодаря @Transactional
-//
-//        return existing;
-//    }
+
+    public TaskResponseDto  updatePatchTask(Long id, TaskPatchRequestDto request) {
+        Task existing = taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException(id));
+
+        if (request.getTitle() != null) {
+            existing.setTitle(request.getTitle());
+        }
+
+        if (request.getDescription() != null) {
+            existing.setDescription(request.getDescription());
+        }
+
+        TaskResponseDto response = new TaskResponseDto();
+
+        response.setId(existing.getId());
+        response.setTitle(existing.getTitle());
+        response.setDescription(existing.getDescription());
+
+        return response;
+    }
 }

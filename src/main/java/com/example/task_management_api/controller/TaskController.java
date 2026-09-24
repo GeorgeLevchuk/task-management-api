@@ -1,7 +1,10 @@
 package com.example.task_management_api.controller;
 
-import com.example.task_management_api.entity.Task;
+import com.example.task_management_api.dto.TaskPatchRequestDto;
+import com.example.task_management_api.dto.TaskRequestDto;
+import com.example.task_management_api.dto.TaskResponseDto;
 import com.example.task_management_api.service.TaskService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,18 +20,18 @@ public class TaskController {
     }
 
     @GetMapping
-    public List<Task> getAllTasks(){
+    public List<TaskResponseDto> getAllTasks(){
         return taskService.getAllTasks();
     }
 
     @GetMapping("/{id}")
-    public Task getTask(@PathVariable Long id){
+    public TaskResponseDto getTask(@PathVariable Long id){
         return taskService.getById(id);
     }
 
     @PostMapping
-        public ResponseEntity<Task> createTask(@RequestBody Task task){
-        Task createdTask = taskService.createTask(task);
+        public ResponseEntity<TaskResponseDto> createTask(@Valid @RequestBody TaskRequestDto request){
+        TaskResponseDto createdTask = taskService.createTask(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(createdTask);
@@ -43,7 +46,10 @@ public class TaskController {
     }
 
     @PutMapping("/{id}")
-    public Task updateTask(@PathVariable Long id, @RequestBody Task task){
-        return taskService.updateTask(id,task);
+    public TaskResponseDto updateTask(@PathVariable Long id, @Valid @RequestBody TaskRequestDto request){
+        return taskService.updateTask(id,request);
     }
+
+    @PatchMapping("/{id}")
+    public TaskResponseDto updatePatchTask(@PathVariable Long id, @Valid @RequestBody TaskPatchRequestDto request){return taskService.updatePatchTask(id,request);}
 }
