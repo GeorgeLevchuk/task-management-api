@@ -20,26 +20,25 @@ public class TaskService {
     }
 
     public List<TaskResponseDto> getAllTasks(){
-        List<Task> tasks = taskRepository.findAll();
-        List<TaskResponseDto> responses = new java.util.ArrayList<>();
-        for (Task task : tasks) {
-            TaskResponseDto response = new TaskResponseDto();
-            response.setId(task.getId());
-            response.setTitle(task.getTitle());
-            response.setDescription(task.getDescription());
-            responses.add(response);
-        }
-        return responses;
+//        List<Task> tasks = taskRepository.findAll();
+//        List<TaskResponseDto> responses = new java.util.ArrayList<>();
+//        for (Task task : tasks) {
+//            TaskResponseDto response = mapToResponse(task);
+//            responses.add(response);
+//        }
+//        return responses;
+
+        return taskRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     public TaskResponseDto getById(Long id){
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
-        TaskResponseDto response = new TaskResponseDto();
-        response.setId(task.getId());
-        response.setTitle(task.getTitle());
-        response.setDescription(task.getDescription());
-        return response;
+        return mapToResponse(task);
+
     }
 
     public TaskResponseDto createTask(TaskRequestDto request) {
@@ -48,11 +47,8 @@ public class TaskService {
         task.setDescription(request.getDescription());
         Task savedTask = taskRepository.save(task);
 
-        TaskResponseDto response = new TaskResponseDto();
-        response.setId(savedTask.getId());
-        response.setTitle(savedTask.getTitle());
-        response.setDescription(savedTask.getDescription());
-        return response;
+        return mapToResponse(savedTask);
+
     }
 
     public void deleteTask(Long id) {
@@ -69,11 +65,8 @@ public class TaskService {
         existing.setTitle(request.getTitle());
         existing.setDescription(request.getDescription());
 
-        TaskResponseDto response = new TaskResponseDto();
-        response.setId(existing.getId());
-        response.setTitle(existing.getTitle());
-        response.setDescription(existing.getDescription());
-        return response;
+        return mapToResponse(existing);
+
     }
 
     public TaskResponseDto  updatePatchTask(Long id, TaskPatchRequestDto request) {
@@ -88,12 +81,17 @@ public class TaskService {
             existing.setDescription(request.getDescription());
         }
 
-        TaskResponseDto response = new TaskResponseDto();
-
-        response.setId(existing.getId());
-        response.setTitle(existing.getTitle());
-        response.setDescription(existing.getDescription());
-
-        return response;
+        return mapToResponse(existing);
     }
+
+    private TaskResponseDto mapToResponse(Task task){
+        TaskResponseDto taskResponseDto = new TaskResponseDto();
+        taskResponseDto.setId(task.getId());
+        taskResponseDto.setDescription(task.getDescription());
+        taskResponseDto.setTitle(task.getTitle());
+
+        return taskResponseDto;
+    }
+
+
 }
