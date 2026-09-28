@@ -1,5 +1,6 @@
 package com.example.task_management_api.service;
 
+import com.example.task_management_api.dto.TaskRequestDto;
 import com.example.task_management_api.dto.TaskResponseDto;
 import com.example.task_management_api.entity.Task;
 import com.example.task_management_api.exception.TaskNotFoundException;
@@ -101,6 +102,122 @@ public class TaskServiceTest {
 //        assertEquals(task.getId(),result.getId());
 //        //     assertEquals("Learn Java", result.getTitle());
 //        assertEquals("Create Rest Task API", result.getDescription());
+    }
+
+    @Test
+    void deleteTaskExistsById(){
+        Long id = 1L;
+
+        when(taskRepository.existsById(id)).thenReturn(true);
+
+        taskService.deleteTask(id);
+
+        verify(taskRepository).existsById(id);
+        verify(taskRepository).deleteById(id);
+    }
+
+    @Test
+        //Подход к написанию unit-тестов. Тест делится на три части:
+        //
+        //Arrange — подготовка (данные, mock'и).
+        //
+        //Act — вызов тестируемого метода.
+        //
+        //Assert — проверка результата.
+        //
+        //Название идёт от того, что делает тест (технические шаги).
+        //
+        //BDD — Behavior-Driven Development
+        //Подход к разработке, при котором тесты описывают поведение системы на языке бизнеса. Отсюда формат:
+        //
+        //Given — дано (контекст, начальные условия).
+        //
+        //When — когда (событие, действие).
+        //
+        //Then — тогда (ожидаемый результат).
+        //
+        //Название идёт от того, что описывает тест (поведение), а не от технических шагов.
+    void deleteTaskNotExistsById(){
+        //given - подготовка
+        Long id = 2L;
+
+        //when - действие
+        when(taskRepository.existsById(id)).thenReturn(false);
+
+        //then - проверка
+        assertThrows(TaskNotFoundException.class, () -> taskService.deleteTask(id));
+        verify(taskRepository, never()).deleteById(id);
+    }
+
+    @Test
+    void updateTaskExistsById(){
+        Task task = new Task();
+        task.setId(3L);
+        task.setTitle("Old title");
+        task.setDescription("Old description");
+
+        TaskRequestDto requestDto = new TaskRequestDto();
+        requestDto.setTitle("New title");
+        requestDto.setDescription("New description");
+
+        when(taskRepository.findById(3L)).thenReturn(Optional.of(task));
+
+        taskService.updateTask(3L, requestDto);
+
+        assertEquals("New title", task.getTitle());
+        assertEquals("New description", task.getDescription());
+        verify(taskRepository, times(1)).findById(3L);
+        verify(taskRepository).findById(3L);
+    }
+
+    @Test
+    void updateTaskNotExistsById(){
+        Long id = 4L;
+        TaskRequestDto requestDto = new TaskRequestDto();
+        requestDto.setDescription("Create Rest Task API");
+        requestDto.setTitle("Task API");
+
+        when(taskRepository.findById(id)).thenReturn(Optional.empty());
+
+
+        assertThrows(TaskNotFoundException.class,
+                () -> taskService.updateTask(id, requestDto));
+        verify(taskRepository).findById(id);
+    }
+
+    @Test
+    void getById_shouldThrowException_whenTaskNotFound(){
+        when(taskRepository.findById(999L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                TaskNotFoundException.class,
+                () -> taskService.getById(999L)
+        );
+    }
+
+//    public int divide(int a, int b) {
+//        if (b == 0) {
+//            throw new IllegalArgumentException("Cannot divide by zero");
+//        }
+//
+//        return a / b;
+//    }
+//
+//    @Test
+//    void divideByZero(){
+//        assertThrows(IllegalArgumentException.class, () -> divide(100,0));
+//    }
+
+    @Test
+    void exceptionGetMessage_TaskNotFoundException(){
+        when(taskRepository.findById(999L)).thenReturn(Optional.empty());
+
+        TaskNotFoundException exception = assertThrows(
+                TaskNotFoundException.class,
+                ()->taskService.getById(999L)
+        );
+        assertEquals("Task with id 999 not found",exception.getMessage());
     }
 
 
