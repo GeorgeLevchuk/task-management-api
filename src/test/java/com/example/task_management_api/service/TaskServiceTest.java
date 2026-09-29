@@ -74,6 +74,35 @@ public class TaskServiceTest {
     }
 
     @Test
+    void getById_whenTaskFound(){
+        Long id = 1L;
+        Task task = new Task();
+        task.setId(id);
+        task.setTitle("New title");
+        task.setDescription("New description");
+
+        when(taskRepository.findById(id))
+                .thenReturn(Optional.of(task));
+
+        TaskResponseDto responseDto = taskService.getById(id);
+
+        assertEquals("New title", responseDto.getTitle());
+        assertEquals("New description", responseDto.getDescription());
+        verify(taskRepository).findById(id);
+    }
+
+    @Test
+    void getById_shouldThrowException_whenTaskNotFound(){
+        when(taskRepository.findById(999L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                TaskNotFoundException.class,
+                () -> taskService.getById(999L)
+        );
+    }
+
+    @Test
     void shouldReturnTaskWhenTaskNotExists(){
         when(taskRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -136,35 +165,6 @@ public class TaskServiceTest {
         assertThrows(TaskNotFoundException.class,
                 () -> taskService.updateTask(id, requestDto));
         verify(taskRepository).findById(id);
-    }
-
-    @Test
-    void getById_whenTaskFound(){
-        Long id = 1L;
-        Task task = new Task();
-        task.setId(id);
-        task.setTitle("New title");
-        task.setDescription("New description");
-
-        when(taskRepository.findById(id))
-                .thenReturn(Optional.of(task));
-
-        TaskResponseDto responseDto = taskService.getById(id);
-
-        assertEquals("New title", responseDto.getTitle());
-        assertEquals("New description", responseDto.getDescription());
-        verify(taskRepository).findById(id);
-    }
-
-    @Test
-    void getById_shouldThrowException_whenTaskNotFound(){
-        when(taskRepository.findById(999L))
-                .thenReturn(Optional.empty());
-
-        assertThrows(
-                TaskNotFoundException.class,
-                () -> taskService.getById(999L)
-        );
     }
 
     @Test
