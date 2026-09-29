@@ -1,6 +1,7 @@
 package com.example.task_management_api.service;
 
 import com.example.task_management_api.dto.TaskRequestDto;
+import com.example.task_management_api.dto.TaskResponseDto;
 import com.example.task_management_api.entity.Task;
 import com.example.task_management_api.exception.TaskNotFoundException;
 import com.example.task_management_api.repository.TaskRepository;
@@ -10,6 +11,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,17 +28,49 @@ public class TaskServiceTest {
     private TaskService taskService;
 
     @Test
-    void shouldReturnTaskWhenTaskExists(){
-
+    void getAll_whenTasksExists(){
+        List<Task> list = new ArrayList<>();
         Task task = new Task();
         task.setId(1L);
-        task.setDescription("Create Rest Task API");
-        task.setTitle("Task API");
+        task.setTitle("New title task");
+        task.setDescription("New description task");
+        list.add(task);
+        Task task2 = new Task();
+        task2.setId(2L);
+        task2.setTitle("New title task2");
+        task2.setDescription("New description task2");
+        list.add(task2);
+        Task task3 = new Task();
+        task3.setId(3L);
+        task3.setTitle("New title task3");
+        task3.setDescription("New description task3");
+        list.add(task3);
 
-        when(taskRepository.findById(1L))
-                .thenReturn(Optional.of(task));
+        when(taskRepository.findAll())
+                .thenReturn(list);
 
-        verify(taskRepository, times(1)).findById(1L);
+        List<TaskResponseDto> listResponseDto = taskService.getAllTasks();
+
+        assertEquals("New title task", listResponseDto.get(0).getTitle());
+        assertEquals("New description task", listResponseDto.get(0).getDescription());
+        assertEquals("New title task2", listResponseDto.get(1).getTitle());
+        assertEquals("New description task2", listResponseDto.get(1).getDescription());
+        assertEquals("New title task3", listResponseDto.get(2).getTitle());
+        assertEquals("New description task3", listResponseDto.get(2).getDescription());
+        verify(taskRepository).findAll();
+    }
+
+    @Test
+    void getAll_whenTasksNotExists(){
+        List<Task> list = new ArrayList<>();
+
+        when(taskRepository.findAll())
+                .thenReturn(list);
+
+        List<TaskResponseDto> listResponseDto = taskService.getAllTasks();
+
+        assertEquals(0, listResponseDto.size());
+        verify(taskRepository).findAll();
     }
 
     @Test
@@ -100,6 +135,24 @@ public class TaskServiceTest {
 
         assertThrows(TaskNotFoundException.class,
                 () -> taskService.updateTask(id, requestDto));
+        verify(taskRepository).findById(id);
+    }
+
+    @Test
+    void getById_whenTaskFound(){
+        Long id = 1L;
+        Task task = new Task();
+        task.setId(id);
+        task.setTitle("New title");
+        task.setDescription("New description");
+
+        when(taskRepository.findById(id))
+                .thenReturn(Optional.of(task));
+
+        TaskResponseDto responseDto = taskService.getById(id);
+
+        assertEquals("New title", responseDto.getTitle());
+        assertEquals("New description", responseDto.getDescription());
         verify(taskRepository).findById(id);
     }
 
