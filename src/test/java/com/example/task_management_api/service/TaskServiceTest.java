@@ -1,5 +1,6 @@
 package com.example.task_management_api.service;
 
+import com.example.task_management_api.dto.TaskPatchRequestDto;
 import com.example.task_management_api.dto.TaskRequestDto;
 import com.example.task_management_api.dto.TaskResponseDto;
 import com.example.task_management_api.entity.Task;
@@ -135,7 +136,7 @@ public class TaskServiceTest {
     }
 
     @Test
-    void deleteTaskExistsById(){
+    void deleteTask_whenTaskFound(){
         Long id = 1L;
 
         when(taskRepository.existsById(id)).thenReturn(true);
@@ -147,7 +148,7 @@ public class TaskServiceTest {
 
     @Test
 
-    void deleteTaskNotExistsById(){
+    void deleteTask_shouldThrowException_whenTaskNotFound(){
         Long id = 2L;
 
         when(taskRepository.existsById(id)).thenReturn(false);
@@ -157,7 +158,7 @@ public class TaskServiceTest {
     }
 
     @Test
-    void updateTaskExistsById(){
+    void updateTask_whenTaskFound(){
         Task task = new Task();
         task.setId(3L);
         task.setTitle("Old title");
@@ -178,7 +179,7 @@ public class TaskServiceTest {
     }
 
     @Test
-    void updateTaskNotExistsById(){
+    void updateTask_shouldThrowException_whenTaskNotFound(){
         Long id = 4L;
         TaskRequestDto requestDto = new TaskRequestDto();
         requestDto.setDescription("Create Rest Task API");
@@ -200,6 +201,76 @@ public class TaskServiceTest {
                 ()->taskService.getById(999L)
         );
         assertEquals("Task with id 999 not found",exception.getMessage());
+    }
+
+    @Test
+    void updatePatchTask_whenUpdateTitle(){
+        Long id = 3L;
+        Task task = new Task();
+        task.setId(id);
+        task.setTitle("Old title");
+        task.setDescription("Old description");
+
+        TaskPatchRequestDto request = new TaskPatchRequestDto();
+        request.setTitle("New title");
+
+        when(taskRepository.findById(id)).thenReturn(Optional.of(task));
+
+        TaskResponseDto taskResponseDto = taskService.updatePatchTask(id, request);
+
+        assertEquals("New title",taskResponseDto.getTitle());
+        assertEquals("Old description",taskResponseDto.getDescription());
+        verify(taskRepository).findById(id);
+    }
+
+    @Test
+    void updatePatchTask_whenUpdateBoth(){
+        Long id = 3L;
+        Task task = new Task();
+        task.setId(id);
+        task.setTitle("Old title");
+        task.setDescription("Old description");
+
+        TaskPatchRequestDto request = new TaskPatchRequestDto();
+        request.setTitle("New title");
+        request.setDescription("New description");
+
+        when(taskRepository.findById(id)).thenReturn(Optional.of(task));
+
+        TaskResponseDto taskResponseDto = taskService.updatePatchTask(id, request);
+
+        assertEquals("New title",taskResponseDto.getTitle());
+        assertEquals("New description",taskResponseDto.getDescription());
+        verify(taskRepository).findById(id);
+    }
+
+    @Test
+    void updatePatchTask_whenNotUpdate(){
+        Long id = 3L;
+        Task task = new Task();
+        task.setId(id);
+        task.setTitle("Old title");
+        task.setDescription("Old description");
+
+        TaskPatchRequestDto request = new TaskPatchRequestDto();
+
+        when(taskRepository.findById(id)).thenReturn(Optional.of(task));
+
+        TaskResponseDto taskResponseDto = taskService.updatePatchTask(id, request);
+
+        assertEquals("Old title",taskResponseDto.getTitle());
+        assertEquals("Old description",taskResponseDto.getDescription());
+        verify(taskRepository).findById(id);
+    }
+
+    @Test
+    void updatePatchTask_shouldThrowException_whenTaskNotFound(){
+        Long id = 3L;
+        TaskPatchRequestDto request = new TaskPatchRequestDto();
+
+        when(taskRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(TaskNotFoundException.class, () -> taskService.updatePatchTask(id, request));
     }
 
 
