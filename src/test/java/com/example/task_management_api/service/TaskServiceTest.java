@@ -103,6 +103,30 @@ public class TaskServiceTest {
     }
 
     @Test
+    void createTask_whenTaskCreated(){
+
+        TaskRequestDto request = new TaskRequestDto();
+        request.setTitle("New title task");
+        request.setDescription("New description task");
+
+        Task task = new Task();
+        task.setId(2L);
+        task.setTitle(request.getTitle());
+        task.setDescription(request.getDescription());
+
+        when(taskRepository.save(any(Task.class))).thenReturn(task);
+
+        TaskResponseDto taskResponseDto = taskService.createTask(request);
+
+        assertEquals("New title task", taskResponseDto.getTitle());
+        assertEquals("New description task", taskResponseDto.getDescription());
+        verify(taskRepository).save(any());
+        verify(taskRepository).save(any(Task.class));
+
+    }
+
+
+    @Test
     void shouldReturnTaskWhenTaskNotExists(){
         when(taskRepository.findById(99L)).thenReturn(Optional.empty());
 
