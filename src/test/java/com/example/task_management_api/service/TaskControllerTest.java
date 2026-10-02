@@ -1,15 +1,21 @@
 package com.example.task_management_api.service;
 
 import com.example.task_management_api.controller.TaskController;
+import com.example.task_management_api.dto.TaskRequestDto;
 import com.example.task_management_api.dto.TaskResponseDto;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+
+import com.example.task_management_api.exception.NotValidAttributeTaskException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
 import java.util.List;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -81,5 +87,57 @@ public class TaskControllerTest {
                 .andExpect(jsonPath("$.title").value("t"));
 
         verify(taskService, times(1)).getById(id);
+    }
+
+    @Test
+    void createTask_whenTaskFound() throws Exception {
+        Long id =3L;
+
+        TaskResponseDto taskResponseDto = new TaskResponseDto();
+        taskResponseDto.setId(id);
+        taskResponseDto.setTitle("t");
+        taskResponseDto.setDescription("d");
+
+        when(taskService.createTask(any(TaskRequestDto.class))).thenReturn(taskResponseDto);
+
+        //что здесь поисходит?
+        mockMvc.perform(post("/tasks")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "title": "t",
+                            "description": "d"
+                        }
+                        """))
+               // .andDo(print())
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.description").value("d"))
+                .andExpect(jsonPath("$.title").value("t"));
+
+        verify(taskService).createTask(any(TaskRequestDto.class));
+    }
+
+    @Test
+    void createTask_shouldReturnBadRequest() throws Exception {
+
+
+        when(taskService.createTask(any(TaskRequestDto.class)))
+                .thenThrow(new NotValidAttributeTaskException());
+
+        //что здесь поисходит?
+        mockMvc.perform(post("/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                            "title": "t",
+                            "description": "d"
+                        }
+                        """))
+                // .andDo(print())
+                .andExpect(status().isBadRequest());
+                //andExpect(jsonPath("$.description").value("d"))
+                //.andExpect(jsonPath("$.title").value("t"));
+
+        verify(taskService).createTask(any(TaskRequestDto.class));
     }
 }
