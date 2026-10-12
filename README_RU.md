@@ -251,8 +251,8 @@ spring.jpa.properties.hibernate.format_sql=true
 Замените URL и имя каталога на фактические значения вашего GitHub-репозитория.
 
 ```bash
-git clone <YOUR_REPOSITORY_URL>
-cd <YOUR_REPOSITORY_DIRECTORY>
+git clone https://github.com/GeorgeLevchuk/task-management-api.git
+cd task-management-api
 ```
 
 ### 2. Настройка PostgreSQL
