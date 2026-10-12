@@ -1,211 +1,194 @@
 # Task Management API
 
-A REST API for managing tasks, built with Java and Spring Boot. This project demonstrates a layered backend structure, persistence with Spring Data JPA, request validation, centralized exception handling, and automated tests.
+A RESTful API for managing tasks, built with Java 21, Spring Boot, Spring Web, Spring Data JPA, and PostgreSQL.
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Architecture](#architecture)
-- [API Endpoints](#api-endpoints)
-- [Request and Response Examples](#request-and-response-examples)
-- [Validation and Error Handling](#validation-and-error-handling)
-- [Database](#database)
-- [Testing](#testing)
-- [Getting Started](#getting-started)
-- [Configuration](#configuration)
-- [Example Usage](#example-usage)
-- [Project Structure](#project-structure)
-- [Future Improvements](#future-improvements)
-
-## Overview
-
-Task Management API provides HTTP endpoints for creating, retrieving, updating, and deleting tasks. Each task has an identifier, a title, and a description.
-
-The application uses a layered design: the controller handles HTTP requests, the service contains application logic and maps entities to response DTOs, and the repository provides persistence operations through Spring Data JPA.
+The project demonstrates a layered application architecture, DTO-based request and response handling, Bean Validation, centralized exception handling, and automated unit and web-layer tests.
 
 ## Features
 
-The following features are implemented in the current source code:
-
-- Retrieve all tasks.
-- Retrieve a task by ID.
-- Create a task.
-- Fully update a task using `PUT`.
+- Retrieve all tasks or a task by ID.
+- Create new tasks.
+- Replace an existing task using `PUT`.
 - Partially update a task using `PATCH`.
-- Delete a task.
-- Validate request DTOs with Jakarta Bean Validation.
-- Handle task-not-found and custom invalid-attribute exceptions centrally.
-- Return structured JSON responses for handled errors.
-
-Validation currently requires a non-blank title with a maximum length of 255 characters for create and full-update requests. The PATCH request limits the title to 255 characters but does not apply the same non-blank constraint. The description has no Bean Validation constraints in the current DTOs.
+- Delete tasks.
+- Validate incoming requests using Jakarta Bean Validation.
+- Handle missing tasks and invalid requests.
+- Test service and controller behavior using JUnit, Mockito, and MockMvc.
 
 ## Tech Stack
 
-| Technology | Role in this project |
+| Technology | Purpose |
 |---|---|
-| Java 21 | Application language; the Maven build sets `java.version` to `21`. |
-| Spring Boot 4.1.1 | Application bootstrap and framework configuration, as declared in `pom.xml`. |
-| Spring Web MVC | REST controllers and HTTP request/response handling. |
-| Spring Data JPA | Repository abstraction and CRUD persistence operations. |
-| Hibernate | JPA provider used by the Spring Data JPA stack. |
-| PostgreSQL JDBC Driver | Runtime driver for connecting to PostgreSQL. |
-| Jakarta Bean Validation | Request validation through constraints such as `@NotBlank` and `@Size`, triggered by `@Valid`. |
-| JUnit Jupiter (JUnit 5) | Test framework provided through the Spring Boot test dependencies. |
-| Mockito | Mocking and interaction verification in service and controller tests. |
-| Spring MockMvc | Simulates MVC requests and checks HTTP responses without starting a full HTTP server for the MVC slice tests. |
-| Maven | Dependency management and project build. |
-| Git | Version control. |
+| Java 21 | Programming language |
+| Spring Boot | Application framework |
+| Spring Web | REST endpoints and HTTP request handling |
+| Spring Data JPA | Data access and repository abstraction |
+| Hibernate | JPA implementation |
+| PostgreSQL | Relational database |
+| Jakarta Bean Validation | Request validation |
+| Maven | Build and dependency management |
+| JUnit Jupiter | Testing framework |
+| Mockito | Mocking dependencies in tests |
+| Spring MVC Test / MockMvc | Controller-layer testing |
 
 ## Architecture
 
 The application follows a layered structure:
 
-1. **Controller — `TaskController`**  
-   Exposes the `/tasks` HTTP endpoints, accepts request DTOs, invokes the service, and selects HTTP response statuses where explicitly configured.
+- **Controller** — exposes REST endpoints and handles HTTP requests.
+- **Service** — implements task-related business logic and maps entities to response DTOs.
+- **Repository** — provides database access through Spring Data JPA.
+- **Entity** — represents a task in the database.
+- **DTOs** — define the request and response data structures.
+- **Global exception handler** — converts supported exceptions into HTTP error responses.
 
-2. **Service — `TaskService`**  
-   Contains task operations, retrieves and changes entities through the repository, throws `TaskNotFoundException` when a requested task does not exist, and maps `Task` entities to `TaskResponseDto` objects. DTO-to-entity field assignment for creation and updates is also performed in this layer.
+The main domain entity is `Task`. It contains an ID, a title, and a description and is mapped to the `task` database table.
 
-3. **Repository — `TaskRepository`**  
-   Extends `JpaRepository<Task, Long>` to use Spring Data JPA persistence operations.
+## API Reference
 
-4. **Entity — `Task`**  
-   Represents the persisted task and maps to the database table named `task`. Its `id` is generated using `GenerationType.IDENTITY`.
+The API uses the `/tasks` base path.
 
-5. **DTOs — request, response, and error objects**  
-   `TaskRequestDto` is used for creation and full updates, `TaskPatchRequestDto` for partial updates, `TaskResponseDto` for task responses, and `ErrorResponseDto` for handled application errors.
-
-6. **Global exception handler — `GlobalExceptionHandler`**  
-   Uses `@RestControllerAdvice` to convert selected exceptions and request validation failures into HTTP error responses.
-
-Typical request flow:
-
-`HTTP request → TaskController → TaskService → TaskRepository → PostgreSQL`
-
-The response travels back through the service and controller. The service maps entities to response DTOs; entities are not returned directly by the controller.
-
-## API Endpoints
-
-All endpoints use the `/tasks` base path. Status codes below are based on the controller and exception-handler implementation.
-
-| Method | Endpoint | Purpose | Responses confirmed by the code |
+| Method | Endpoint | Description | Success response |
 |---|---|---|---|
 | `GET` | `/tasks` | Retrieve all tasks | `200 OK` |
-| `GET` | `/tasks/{id}` | Retrieve one task by ID | `200 OK`, `404 Not Found` when the task does not exist |
-| `POST` | `/tasks` | Create a task | `201 Created`, `400 Bad Request` for request validation failure or the handled custom invalid-attribute exception |
-| `PUT` | `/tasks/{id}` | Replace the task's title and description | `200 OK`, `400 Bad Request` for request validation failure, `404 Not Found` when the task does not exist |
-| `PATCH` | `/tasks/{id}` | Update supplied non-null fields | `200 OK`, `400 Bad Request` for request validation failure, `404 Not Found` when the task does not exist |
-| `DELETE` | `/tasks/{id}` | Delete a task | `204 No Content`, `404 Not Found` when the task does not exist |
+| `GET` | `/tasks/{id}` | Retrieve a task by ID | `200 OK` |
+| `POST` | `/tasks` | Create a task | `201 Created` |
+| `PUT` | `/tasks/{id}` | Replace a task's editable fields | `200 OK` |
+| `PATCH` | `/tasks/{id}` | Partially update a task | `200 OK` |
+| `DELETE` | `/tasks/{id}` | Delete a task | `204 No Content` |
 
-The API does not currently define a separate `Location` header for successful creation. The `POST` response body contains the created task DTO.
+If a requested task does not exist, the API returns `404 Not Found` for operations that require an existing task.
 
-## Request and Response Examples
+### Task representation
 
-Examples use `http://localhost:8080` as the local base URL. They assume the application is running and PostgreSQL is configured.
+A task response has the following structure:
+
+```json
+{
+  "id": 1,
+  "title": "Prepare for a Java interview",
+  "description": "Practice Java, Spring, JPA, and testing"
+}
+```
+
+The `id` is generated by the persistence layer.
 
 ### Create a task
 
-**Request — `POST /tasks`**
+**Request**
+
+```http
+POST /tasks
+Content-Type: application/json
+```
 
 ```json
 {
-  "title": "Prepare Java interview",
-  "description": "Review Spring Boot and REST API fundamentals"
+  "title": "Read Effective Java",
+  "description": "Review selected chapters"
 }
 ```
 
-**Successful response — `201 Created`**
+**Example using cURL**
+
+```bash
+curl -i -X POST http://localhost:8080/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Read Effective Java",
+    "description": "Review selected chapters"
+  }'
+```
+
+A successful request returns `201 Created` and the created task representation.
+
+### Retrieve all tasks
+
+```bash
+curl -i http://localhost:8080/tasks
+```
+
+Returns `200 OK` with a JSON array of tasks. If there are no tasks, the response contains an empty array.
+
+### Retrieve a task by ID
+
+```bash
+curl -i http://localhost:8080/tasks/1
+```
+
+Returns `200 OK` if the task exists or `404 Not Found` if it does not.
+
+### Replace a task
+
+`PUT` updates the task's title and description using the supplied request body.
+
+```http
+PUT /tasks/1
+Content-Type: application/json
+```
 
 ```json
 {
-  "id": 1,
-  "title": "Prepare Java interview",
-  "description": "Review Spring Boot and REST API fundamentals"
+  "title": "Read Spring in Action",
+  "description": "Study Spring application development"
 }
 ```
 
-The ID is generated by the database; `1` is an illustrative example.
-
-### Retrieve a task
-
-**Request — `GET /tasks/1`**
-
-**Successful response — `200 OK`**
-
-```json
-{
-  "id": 1,
-  "title": "Prepare Java interview",
-  "description": "Review Spring Boot and REST API fundamentals"
-}
-```
-
-### Fully update a task
-
-**Request — `PUT /tasks/1`**
-
-Both request fields are supplied for a full update.
-
-```json
-{
-  "title": "Prepare for a Java interview",
-  "description": "Practice Java, Spring, JPA, and testing"
-}
-```
-
-**Successful response — `200 OK`**
-
-```json
-{
-  "id": 1,
-  "title": "Prepare for a Java interview",
-  "description": "Practice Java, Spring, JPA, and testing"
-}
-```
+Both fields should be supplied. The request uses the same DTO validation rules as task creation.
 
 ### Partially update a task
 
-**Request — `PATCH /tasks/1`**
+`PATCH` updates only the fields supplied with non-null values.
 
-Only the title is supplied. Fields omitted from the request are left unchanged by the service.
+```http
+PATCH /tasks/1
+Content-Type: application/json
+```
 
 ```json
 {
-  "title": "Review Spring MVC"
+  "description": "Review the persistence chapter"
 }
 ```
 
-**Successful response — `200 OK`**
+In this example, the description is updated while the existing title is preserved.
 
-```json
-{
-  "id": 1,
-  "title": "Review Spring MVC",
-  "description": "Practice Java, Spring, JPA, and testing"
-}
+**Current behavior:** omitted fields and fields explicitly set to JSON `null` are both treated as not supplied. An empty PATCH request is not explicitly rejected by the current implementation.
+
+### Delete a task
+
+```bash
+curl -i -X DELETE http://localhost:8080/tasks/1
 ```
 
-In the current implementation, a JSON `null` or an omitted field is treated as “do not update” by the service. The DTO does not distinguish those two cases.
+A successful deletion returns `204 No Content` with no response body.
 
-### Task not found
+## Validation and Error Handling
 
-For `GET /tasks/999`, the handled error response has this structure (`timestamp` is generated at runtime):
+Request validation is applied to the create, replace, and partial-update endpoints.
 
-```json
-{
-  "timestamp": "2026-01-01T12:00:00",
-  "status": 404,
-  "error": "Task Not Found",
-  "message": "Task with id 999 not found",
-  "errors": null
-}
-```
+Current validation rules include:
 
-### Request validation error
+- `TaskRequestDto.title` must not be blank.
+- `TaskRequestDto.title` must not exceed 255 characters.
+- `TaskPatchRequestDto.title`, when provided, must not exceed 255 characters.
+- The description field has no explicit Bean Validation constraints in the current DTOs.
 
-For example, `POST /tasks` with a blank title returns `400 Bad Request`. The validation handler currently returns a map with `timestamp`, `status`, `error`, and a field-level `errors` object:
+A blank title is therefore invalid for `POST` and `PUT`. The PATCH DTO currently does not apply the `@NotBlank` constraint to the title.
+
+### HTTP status codes
+
+| Status | Meaning |
+|---|---|
+| `200 OK` | The request succeeded |
+| `201 Created` | A task was created |
+| `204 No Content` | A task was deleted |
+| `400 Bad Request` | Request validation failed |
+| `404 Not Found` | The requested task does not exist |
+
+The global exception handler handles missing-task errors and request-validation errors. The response structure depends on the exception type, so error response formats are not fully uniform in the current implementation.
+
+An example validation response is:
 
 ```json
 {
@@ -218,94 +201,15 @@ For example, `POST /tasks` with a blank title returns `400 Bad Request`. The val
 }
 ```
 
-The timestamp and exact validation message are illustrative; the actual timestamp is generated at runtime and the message comes from the validation provider.
+The timestamp above is illustrative; the actual value is generated when the error occurs.
 
-## Validation and Error Handling
+## Database Configuration
 
-- `TaskRequestDto` applies `@NotBlank` and `@Size(max = 255)` to `title`.
-- `TaskPatchRequestDto` applies `@Size(max = 255)` to `title`; it does not currently use `@NotBlank`.
-- The controller uses `@Valid` on create, PUT, and PATCH request bodies to trigger Bean Validation.
-- `GlobalExceptionHandler`, annotated with `@RestControllerAdvice`, handles `TaskNotFoundException` as `404 Not Found` and `NotValidAttributeTaskException` as `400 Bad Request`.
-- The handler overrides `handleMethodArgumentNotValid` to return `400 Bad Request` with field-level validation messages.
-- `ErrorResponseDto` defines `timestamp`, `status`, `error`, `message`, and `errors`. The custom-exception handlers use this DTO. The validation handler currently builds a map directly, so its response shape is not identical to `ErrorResponseDto`.
+The application uses PostgreSQL. Configure the database connection in:
 
-## Database
+`src/main/resources/application.properties`
 
-The application uses PostgreSQL through the PostgreSQL JDBC driver. `Task` is a JPA entity mapped to the `task` table, and `TaskRepository` extends `JpaRepository` to provide persistence methods. Hibernate is used as the JPA provider.
-
-The current `application.properties` contains:
-
-```properties
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
-```
-
-`ddl-auto=update` is configured, so Hibernate is instructed to update the schema based on entity mappings at startup. No Flyway or Liquibase migration configuration is present in the supplied project files. SQL logging and formatted SQL output are enabled in the current configuration.
-
-## Testing
-
-The repository contains the following test classes:
-
-- **`TaskServiceTest`** — 15 test methods covering retrieval, empty results, DTO mapping, creation, deletion, missing tasks, full updates, and PATCH behavior. It uses JUnit Jupiter and Mockito (`@ExtendWith(MockitoExtension.class)`, mocks, argument captors, and interaction verification).
-- **`TaskControllerTest`** — 6 MVC test methods covering retrieval, a missing task, successful creation, a custom bad-request path, and a blank-title validation failure. It uses `@WebMvcTest`, `MockMvc`, and a Mockito bean override.
-- **`TaskManagementApiApplicationTests`** — a Spring Boot context-load test.
-
-These files confirm that the tests are present, but their presence alone does not confirm that the full test suite passes. The supplied `TaskServiceTest` contains a PATCH test whose expected title appears inconsistent with its setup: it sends only a description update but asserts `"New title"`. Run the test suite and correct that assertion before reporting a successful test run. Controller tests for PUT, PATCH, and DELETE are not currently present.
-
-Run the tests from the project root:
-
-```bash
-mvn test
-```
-
-The project includes Maven wrapper scripts, but the supplied archive does not contain the `.mvn/wrapper` configuration files. Use an installed Maven version compatible with the project unless the wrapper configuration is restored.
-
-## Getting Started
-
-### Prerequisites
-
-- JDK 21
-- Maven installed locally (see the wrapper note in [Testing](#testing))
-- A running PostgreSQL instance
-- A PostgreSQL database and user with permission to connect to that database
-
-### 1. Clone the repository
-
-Replace the placeholder URL with the actual URL of your GitHub repository:
-
-```bash
-git clone <YOUR_REPOSITORY_URL>
-cd task-management-api
-```
-
-### 2. Create a PostgreSQL database
-
-Create a database and a user for the application using your local PostgreSQL administration tool or SQL client. The exact commands depend on your local PostgreSQL setup.
-
-### 3. Configure the database connection
-
-Update `src/main/resources/application.properties` with your local database URL, username, and password. Do not commit real credentials. See [Configuration](#configuration) for the required properties.
-
-### 4. Run the application
-
-```bash
-mvn spring-boot:run
-```
-
-By default, Spring Boot applications use port `8080` unless configured otherwise. After startup, try `GET http://localhost:8080/tasks`.
-
-### 5. Run tests
-
-```bash
-mvn test
-```
-
-Tests that load the full Spring application context may require a reachable database because the application is configured with a PostgreSQL datasource.
-
-## Configuration
-
-The supplied `src/main/resources/application.properties` declares these datasource properties, but their values are placeholders in the provided archive:
+Example configuration:
 
 ```properties
 spring.application.name=task-management-api
@@ -319,112 +223,135 @@ spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
 ```
 
-This is an example configuration for local development, not a claim that environment-variable substitution is already set up elsewhere in the project. Set `DB_USERNAME` and `DB_PASSWORD` in your shell or IDE run configuration before starting the app, or replace the placeholders locally with your own credentials. Keep secrets out of version control.
+Make sure that:
 
-The datasource URL follows the PostgreSQL JDBC format:
+1. PostgreSQL is installed and running.
+2. The `task_management` database exists.
+3. The database credentials are available through the `DB_USERNAME` and `DB_PASSWORD` environment variables.
 
-`jdbc:postgresql://<host>:<port>/<database>`
+The properties shown above illustrate a local configuration. Adjust the database name, URL, and credentials to match your environment.
 
-## Example Usage
+**Production note:** the current project configuration uses Hibernate's `update` schema mode and enables SQL logging. Review these settings before production deployment. A database migration tool such as Flyway or Liquibase can provide more controlled schema changes.
 
-The following examples assume the server is available at `http://localhost:8080`.
+Never commit real database passwords or other secrets to version control.
 
-Create a task:
+## Getting Started
 
-```bash
-curl -i -X POST http://localhost:8080/tasks \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Read Effective Java","description":"Review selected chapters"}'
-```
+### Prerequisites
 
-List all tasks:
+- JDK 21
+- Maven
+- PostgreSQL
 
-```bash
-curl -i http://localhost:8080/tasks
-```
+### 1. Clone the repository
 
-Get a task by ID:
+Replace the placeholder URL with the actual URL of your GitHub repository.
 
 ```bash
-curl -i http://localhost:8080/tasks/1
+git clone https://github.com/GeorgeLevchuk/task-management-api.git
+cd task-management-api
 ```
 
-Fully update a task:
+### 2. Configure PostgreSQL
+
+Create the database and configure the connection properties in `src/main/resources/application.properties`.
+
+Set the environment variables used by your configuration:
 
 ```bash
-curl -i -X PUT http://localhost:8080/tasks/1 \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Study Spring","description":"Review MVC and JPA"}'
+export DB_USERNAME=your_database_username
+export DB_PASSWORD=your_database_password
 ```
 
-Partially update a task:
+The commands above are for Linux and macOS. Configure equivalent environment variables in your shell or IDE if you use Windows.
+
+### 3. Run the application
+
+From the project root, run:
 
 ```bash
-curl -i -X PATCH http://localhost:8080/tasks/1 \
-  -H "Content-Type: application/json" \
-  -d '{"description":"Practice MockMvc tests"}'
+mvn spring-boot:run
 ```
 
-Delete a task:
+Once the application has started, the API is available at:
+
+```text
+http://localhost:8080
+```
+
+For example, retrieve the task list with:
 
 ```bash
-curl -i -X DELETE http://localhost:8080/tasks/1
+curl http://localhost:8080/tasks
 ```
 
-A successful delete returns `204 No Content` with no response body.
+## Running Tests
+
+Run the test suite with:
+
+```bash
+mvn test
+```
+
+The project includes:
+
+- **`TaskServiceTest`** — unit tests for task service operations, using Mockito.
+- **`TaskControllerTest`** — controller tests using Spring MVC Test and MockMvc.
+- **`TaskManagementApiApplicationTests`** — an application context-load test.
+
+To run a specific test class:
+
+```bash
+mvn -Dtest=TaskServiceTest test
+```
+
+The controller tests cover selected GET and POST scenarios. Dedicated controller tests for every PUT, PATCH, and DELETE scenario are not currently included.
+
+Test results depend on the local environment and configuration. Run the commands above to verify the build and tests in your environment.
 
 ## Project Structure
 
-The following structure is based on the supplied archive. Generated files, Git internals, and IDE metadata are omitted.
+The main source code is organized under `com.example.task_management_api`.
 
 ```text
-task-management-api/
-├── pom.xml
-├── mvnw
-├── mvnw.cmd
-├── src/
-│   ├── main/
-│   │   ├── java/com/example/task_management_api/
-│   │   │   ├── TaskManagementApiApplication.java
-│   │   │   ├── controller/
-│   │   │   │   └── TaskController.java
-│   │   │   ├── dto/
-│   │   │   │   ├── ErrorResponseDto.java
-│   │   │   │   ├── TaskPatchRequestDto.java
-│   │   │   │   ├── TaskRequestDto.java
-│   │   │   │   └── TaskResponseDto.java
-│   │   │   ├── entity/
-│   │   │   │   └── Task.java
-│   │   │   ├── exception/
-│   │   │   │   ├── GlobalExceptionHandler.java
-│   │   │   │   ├── NotValidAttributeTaskException.java
-│   │   │   │   └── TaskNotFoundException.java
-│   │   │   ├── repository/
-│   │   │   │   └── TaskRepository.java
-│   │   │   └── service/
-│   │   │       └── TaskService.java
-│   │   └── resources/
-│   │       └── application.properties
-│   └── test/
-│       └── java/com/example/task_management_api/
-│           ├── TaskManagementApiApplicationTests.java
-│           └── service/
-│               ├── TaskControllerTest.java
-│               └── TaskServiceTest.java
-└── README.md
+src/
+├── main/
+│   ├── java/
+│   │   └── com/example/task_management_api/
+│   │       ├── controller/
+│   │       ├── dto/
+│   │       ├── entity/
+│   │       ├── exception/
+│   │       ├── handler/
+│   │       ├── repository/
+│   │       ├── service/
+│   │       └── TaskManagementApiApplication.java
+│   └── resources/
+│       └── application.properties
+└── test/
+    └── java/
+        └── com/example/task_management_api/
+            ├── controller/
+            ├── service/
+            └── TaskManagementApiApplicationTests.java
 ```
 
-## Future Improvements
+The tree shows the main architectural areas; individual filenames and package placement may vary slightly with subsequent changes.
 
-The following are potential next steps, not implemented features:
+## Potential Improvements
 
-- Add MVC tests for PUT, PATCH, and DELETE, including missing-task cases and response-body assertions.
-- Fix the inconsistent PATCH test assertion and run the complete test suite in a configured environment.
-- Return a consistent error schema for Bean Validation failures and custom exceptions, ideally using `ErrorResponseDto` consistently.
-- Add validation tests for title length and PATCH edge cases; decide explicitly whether an empty PATCH request should be accepted.
-- Move local database credentials to environment variables or an external local configuration file and document the setup consistently.
-- Consider database migrations with Flyway or Liquibase if schema changes need to be versioned and reproducible.
-- Add pagination and sorting to the list endpoint if the API needs to support larger task collections.
-- Add API documentation (for example, OpenAPI) once the endpoint contract is stable.
-- Add CI checks to compile the project and run tests on each change.
+Possible next steps for the project include:
 
+- Add controller tests for PUT, PATCH, and DELETE endpoints.
+- Standardize error response formats across all exception handlers.
+- Define and test the expected behavior of empty PATCH requests.
+- Decide whether PATCH should distinguish omitted fields from explicit `null` values.
+- Add integration tests against PostgreSQL, for example with Testcontainers.
+- Introduce Flyway or Liquibase for database schema migrations.
+- Add pagination and sorting to the task list endpoint.
+- Document the API with OpenAPI/Swagger.
+- Add a CI workflow to build the project and run tests automatically.
+
+## License
+
+No license is specified in the current project files. Before publishing the repository, add a `LICENSE` file if you intend to grant others permission to use, modify, or distribute the project.
