@@ -355,3 +355,5 @@ Possible next steps for the project include:
 ## License
 
 No license is specified in the current project files. Before publishing the repository, add a `LICENSE` file if you intend to grant others permission to use, modify, or distribute the project.
+
+**Languages:** [English](README.md) | [Русский](README_RU.md)
